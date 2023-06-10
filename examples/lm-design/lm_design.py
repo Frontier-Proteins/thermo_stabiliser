@@ -294,7 +294,7 @@ class Designer:
         ngram_w, ngram_orders, 
         thst_w,
         temp_struct=None,
-        x_temp=None):
+        ):
         """
         Easy one-stop-shop that calls out to all the implemented loss calculators,
         aggregates logs, and weights total_loss.
@@ -333,7 +333,7 @@ class Designer:
             total_loss += ngram_m_nlls
             logs['ngram_loss'] = ngram_m_nlls
         if thst_w:
-            x_temp = ... #TODO (not literally but we need to see where it comes from)
+            x_temp = ... #TODO (pre-trained model here)
             thst_m_nlls = self.calc_thst_loss(x_temp)
             thst_m_nlls *= thst_w
             total_loss += thst_m_nlls
