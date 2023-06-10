@@ -333,7 +333,10 @@ class Designer:
             total_loss += ngram_m_nlls
             logs['ngram_loss'] = ngram_m_nlls
         if thst_w:
-            x_temp = ... #TODO (pre-trained model here)
+            ptmodel = torch.load('pre_trained_tm.pt')
+            ptmodel.eval()
+            seqs = self.decode(x)
+            x_temp = torch.from_numpy(ptmodel(seqs)).detach().numpy()
             thst_m_nlls = self.calc_thst_loss(x_temp)
             thst_m_nlls *= thst_w
             total_loss += thst_m_nlls
