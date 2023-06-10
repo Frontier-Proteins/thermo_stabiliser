@@ -31,6 +31,7 @@ tasks:
               struct_w: 3
               LM_w: 2
               ngram_w: 1
+              thst_w: 1
               ngram_orders: [1,2,3]
           temperature:
               scheduler: StepLR
