@@ -23,6 +23,9 @@ from omegaconf import DictConfig, OmegaConf
 import torch
 import torch.nn.functional as F
 
+from transformers import AutoModelForSequenceClassification
+from transformers import AutoConfig, AutoTokenizer
+
 # make sure script started from the root of the this file
 assert Path.cwd().name == 'lm-design', 'Please run this script from examples/lm-design/'
 sys.path.append('../../')
@@ -187,16 +190,28 @@ class Designer:
 
         logger.info(f'Initialized target {self.pdb_id} of length {self.seqL}')
         logger.info(f'Wildtype sequence:\n{self.wt_seq_raw}')
+        
+        
+        self.B = B = self.num_seqs = 1
+        print(self.wt_seq_raw)
+        K = len(self.vocab)
+        AA_indices = torch.arange(K, device=self.device)[self.vocab_mask_AA]
+        bt = torch.from_numpy(np.random.choice(AA_indices.cpu().numpy(), size=(B, self.L))).to(self.device)
+        # bt = torch.from_numpy(np.fromstring(self.wt_seq_raw))
+        # bt = self.wt_seq
+        # self.x_seqs = F.one_hot(bt,K).float()
+        self.x_seqs = self.wt_seq
+        self.init_seqs = self.x_seqs.clone()
 
     def init_sequences(self, num_seqs):
         assert num_seqs == 1, "Only 1 sequence design in parallel supported for now."
         self.B = B = self.num_seqs = num_seqs
         
-        K = len(self.vocab)
-        AA_indices = torch.arange(K, device=self.device)[self.vocab_mask_AA]
-        bt = torch.from_numpy(np.random.choice(AA_indices.cpu().numpy(), size=(B, self.L))).to(self.device)
-        self.x_seqs = F.one_hot(bt,K).float()
-        self.init_seqs = self.x_seqs.clone()
+        # K = len(self.vocab)
+        # AA_indices = torch.arange(K, device=self.device)[self.vocab_mask_AA]
+        # bt = torch.from_numpy(np.random.choice(AA_indices.cpu().numpy(), size=(B, self.L))).to(self.device)
+        # self.x_seqs = F.one_hot(bt,K).float()
+        # self.init_seqs = self.x_seqs.clone()
 
     ##########################################
     # Losses
@@ -333,14 +348,32 @@ class Designer:
             total_loss += ngram_m_nlls
             logs['ngram_loss'] = ngram_m_nlls
         if thst_w:
-            ptmodel = torch.load('pre_trained_tm.pt')
-            ptmodel.eval()
-            seqs = self.decode(x)
-            x_temp = torch.from_numpy(ptmodel(seqs)).detach().numpy()
+            
+            # model_name = "esm2_t30_150M_UR50D"
+            # model_checkpoint = f"facebook/{model_name}"
+            # model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=1)
+            # model.save_pretrained("models/dummy", from_pt=True)
+
+            # #For fine-tuned models:
+            # model_path = "models/dummy/"
+            # model_name = "dummy_model"
+            # config = AutoConfig.from_pretrained(model_path)
+            # model = AutoModelForSequenceClassification.from_pretrained(model_path, config=config)
+            
+            model = AutoModelForSequenceClassification.from_pretrained("naailkhan28/thermo_stabilizer_v2_3")
+            test_sequence = self.decode(x)
+            print(test_sequence)
+            tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t30_150M_UR50D")
+            tokenized = tokenizer(test_sequence, return_tensors="pt")["input_ids"]
+
+            # seqs = self.decode(x)
+            x_temp = model(tokenized).logits[0][0].cpu().numpy()
             thst_m_nlls = self.calc_thst_loss(x_temp)
             thst_m_nlls *= thst_w
             total_loss += thst_m_nlls
             logs['thst_loss'] = thst_m_nlls
+            
+            logs['seq'] = test_sequence
 
         return total_loss, logs  # [B], Dict[str:[B]]
 

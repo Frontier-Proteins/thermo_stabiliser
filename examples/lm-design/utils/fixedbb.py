@@ -6,6 +6,8 @@
 import logging
 
 import torch
+import pandas as pd
+import numpy as np
 import torch.nn.functional as F
 from torch.distributions import Bernoulli, OneHotCategorical
 from tqdm import tqdm
@@ -23,6 +25,9 @@ def stage_fixedbb(self, cfg, disable_tqdm=False):
 
     itr = self.stepper(range(cfg.num_iter), cfg=cfg)
     itr = tqdm(itr, total=cfg.num_iter, disable=disable_tqdm)
+    
+    logs_all = pd.DataFrame()
+    logs_allp = pd.DataFrame()
     for step, s_cfg in itr:
         x = self.x_seqs
         a_cfg = s_cfg.accept_reject
@@ -48,9 +53,16 @@ def stage_fixedbb(self, cfg, disable_tqdm=False):
         ##############################
         # log A(x',x) = log P(x') - log P(x))
         # for current input x, proposal x', target distribution P and symmetric proposal.
-        log_P_x = self.calc_total_loss(x, mask, **a_cfg.energy_cfg)[0]  # [B]
-        log_P_xp = self.calc_total_loss(xp, mask, **a_cfg.energy_cfg)[0]  # [B]
+        log_P_x, logs = self.calc_total_loss(x, mask, **a_cfg.energy_cfg)  # [B]
+        log_P_xp, logsp = self.calc_total_loss(xp, mask, **a_cfg.energy_cfg)  # [B]
         log_A_xp_x = (-log_P_xp - -log_P_x) / a_cfg.temperature  # [B]
         A_xp_x = (log_A_xp_x).exp().clamp(0, 1)  # [B]
         A_bools = Bernoulli(A_xp_x).sample().bool()  # [B]
         self.x_seqs = torch.where(A_bools[:, None, None], xp, x)  # [B,L,K]
+        
+        logs_all = pd.concat([logs_all, pd.DataFrame({k: v.cpu().numpy() if ((k!='thst_loss') & (k!='seq')) else v for k, v in logs.items()})])
+        logs_allp = pd.concat([logs_allp, pd.DataFrame({k: v.cpu().numpy() if ((k!='thst_loss') & (k!='seq')) else v for k, v in logsp.items()})])
+
+    logs_all.to_csv('logs_all.csv')
+    logs_allp.to_csv('logs_allp.csv')
+        
