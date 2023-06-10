@@ -8,11 +8,15 @@ import os
 # model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=1)
 # model.save_pretrained("models/dummy", from_pt=True)
 
-#For fine-tuned models:
-model_path = "models/dummy/"
-model_name = "dummy_model"
-config = AutoConfig.from_pretrained(model_path)
-model = AutoModelForSequenceClassification.from_pretrained(model_path, config=config)
+#Load the dummy fine-tuned model:
+# model_path = "models/dummy/"
+# model_name = "dummy_model"
+# config = AutoConfig.from_pretrained(model_path)
+# model = AutoModelForSequenceClassification.from_pretrained(model_path, config=config)
+
+#Load a real fine-tuned model from the HuggingFace hub
+model = AutoModelForSequenceClassification.from_pretrained("naailkhan28/my-awesome-model")
+
 
 test_sequence = "MTNLDYF"
 
