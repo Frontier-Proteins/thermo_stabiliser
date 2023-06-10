@@ -236,6 +236,9 @@ class Designer:
             for i in range(len(seqs)):
                 ngram_loss[i] += ngram_utils.compute_kl_div(seqs[i], order)
         return ngram_loss # [B]
+    
+    def calc_thst_loss(self, x_temp):
+        return -np.abs(x_temp)
 
     def calc_structure_loss(self, x_seq, temp_struct=None):
         """Maps x_seq to the structure loss"""
@@ -289,7 +292,9 @@ class Designer:
         LM_w, 
         struct_w, 
         ngram_w, ngram_orders, 
-        temp_struct=None):
+        thst_w,
+        temp_struct=None,
+        ):
         """
         Easy one-stop-shop that calls out to all the implemented loss calculators,
         aggregates logs, and weights total_loss.
@@ -327,6 +332,12 @@ class Designer:
             ngram_m_nlls *= ngram_w
             total_loss += ngram_m_nlls
             logs['ngram_loss'] = ngram_m_nlls
+        if thst_w:
+            x_temp = ... #TODO (pre-trained model here)
+            thst_m_nlls = self.calc_thst_loss(x_temp)
+            thst_m_nlls *= thst_w
+            total_loss += thst_m_nlls
+            logs['thst_loss'] = thst_m_nlls
 
         return total_loss, logs  # [B], Dict[str:[B]]
 
