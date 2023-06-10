@@ -24,6 +24,7 @@ dependencies:
       - biopython==1.79
       - deepspeed==0.5.9
       - dm-tree==0.1.6
+      - ipykernel
       - ml-collections==0.1.0
       - numpy==1.21.2
       - PyYAML==5.4.1
