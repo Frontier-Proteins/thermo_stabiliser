@@ -362,7 +362,6 @@ class Designer:
             
             model = AutoModelForSequenceClassification.from_pretrained("naailkhan28/thermo_stabilizer_v2_3")
             test_sequence = self.decode(x)
-            print(test_sequence)
             tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t30_150M_UR50D")
             tokenized = tokenizer(test_sequence, return_tensors="pt")["input_ids"]
 
